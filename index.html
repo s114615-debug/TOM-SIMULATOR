@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>湯姆朋友模擬器</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', sans-serif;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            background-color: #34495e;
+            width: 90%;
+            max-width: 600px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .avatar {
+            font-size: 80px;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+        .avatar-desc {
+            font-size: 14px;
+            color: #bdc3c7;
+            margin-bottom: 25px;
+        }
+        .story-text {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            min-height: 60px;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        button:hover {
+            background-color: #c0392b;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        button:disabled {
+            background-color: #7f8c8d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result-text {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #f1c40f;
+            font-weight: bold;
+            min-height: 27px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        /* 結局驚嚇特效 */
+        #jumpscare-container {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+            z-index: 9999;
+        }
+        #jumpscare-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #death-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+            color: red;
+            font-size: 50px;
+            font-weight: bold;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="game-container">
+        <div class="avatar" id="avatar">🧑‍🦱👓👔</div>
+        <div class="avatar-desc" id="avatar-desc">（一個戴眼鏡、身材圓潤、穿格子襯衫、捲髮的老實男性）</div>
+        
+        <div class="story-text" id="story-text">我是湯姆，你的朋友。</div>
+        
+        <div class="options" id="options">
+            <button onclick="startGame()">開始互動</button>
+        </div>
+        
+        <div class="result-text" id="result-text"></div>
+    </div>
+
+    <div id="jumpscare-container">
+        <img id="jumpscare-img" src="https://news.gamme.com.tw/816300" alt="Jumpscare">
+    </div>
+    <div id="death-screen">
+        你被湯姆咬死了
+    </div>
+
+    <script>
+        const events = [
+            {
+                text: "湯姆跟你吃火鍋時會把芋頭泡牙膏醃漬後剁爛加進火鍋裡煮，而你要跟湯姆吃同一鍋，你會?",
+                options: [
+                    { text: "A: 爆打湯姆把湯姆丟進湯裡做成湯姆湯", result: "湯姆傷透了心" },
+                    { text: "B: 天阿是牙膏芋頭火鍋!我最喜歡吃牙膏芋頭火鍋了!", result: "湯姆在你的笑容中看出了一絲勉強，湯姆有點難過" },
+                    { text: "C: 不想傷湯姆的心，喝完去廁所吐掉", result: "湯姆尾隨你去廁所看到了，湯姆心情不太好" },
+                    { text: "D: 站到桌上瘋狂67轉移他的注意力", result: "67" },
+                    { text: "E: 這甚麼ㄆㄨㄣ狗都不吃!", result: "湯姆覺得自己的廚藝被侮辱了，有點難過" }
+                ]
+            },
+            {
+                text: "湯姆邀你一起上街乞討，你會?",
+                options: [
+                    { text: "A: 終於有人約我去乞討了!我一直不知道怎麼跟別人開口，好開心!", result: "湯姆心情怪怪的，這樣討到的錢要就要跟你分攤了" },
+                    { text: "B: 拉著他的雙手大喊”戰鬥陀螺”並高速旋轉把他甩飛", result: "湯姆不喜歡玩戰鬥陀螺，湯姆心情不太好" },
+                    { text: "C: 說自己已經有約了，委婉拒絕", result: "湯姆不信" },
+                    { text: "D: 裝傻，這個天空也太天空了吧", result: "湯姆敏銳地察覺到你的抗拒，湯姆有點難過" }
+                ]
+            },
+            {
+                text: "你還是被湯姆拉去乞討了，乞討時湯姆在路邊睡著了，你會?",
+                options: [
+                    { text: "A: 直接跑走，覺得太丟臉了", result: "湯姆被你的動靜驚醒，得知你居然不跟他要飯感到非常難過。" },
+                    { text: "B: 默默守護著湯姆，不讓錢被其他乞丐偷走。", result: "湯姆安穩的睡了一個小時，醒來之後引發起床氣，皺著眉頭。" },
+                    { text: "C: 輕輕搖醒他，必須擺好乞丐的架子！", result: "湯姆覺得他已經很有乞丐風範了，不需要你來糾正" },
+                    { text: "D: 把你們剛要到的錢偷走，必須犒賞自己一頓好的。", result: "聽到你拿錢的聲音，湯姆直接醒來，一口咬在你手上，發現是你之後顯得很疑惑。" }
+                ]
+            },
+            {
+                text: "湯姆想邀請你去他家，你會?",
+                options: [
+                    { text: "A: 我們還沒那麼熟，還是不要了吧", result: "none" },
+                    { text: "B: 湯姆邀請我去他家!我們一定是世界上最好的朋友!", result: "none" },
+                    { text: "C: 半推半就地答應了，再找機會逃跑", result: "none" },
+                    { text: "D: 大喊 殺!殺!殺!", result: "none" }
+                ]
+            }
+        ];
+
+        let currentStage = 0;
+
+        function startGame() {
+            renderEvent();
+        }
+
+        function renderEvent() {
+            const storyText = document.getElementById('story-text');
+            const optionsDiv = document.getElementById('options');
+            const resultTextDiv = document.getElementById('result-text');
+            
+            // 清空先前的結果
+            resultTextDiv.style.opacity = '0';
+            optionsDiv.innerHTML = '';
+
+            const currentEvent = events[currentStage];
+            storyText.innerText = currentEvent.text;
+
+            // 生成選項按鈕
+            currentEvent.options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.innerText = option.text;
+                btn.onclick = () => selectOption(option.result);
+                optionsDiv.appendChild(btn);
+            });
+        }
+
+        function selectOption(resultText) {
+            // 停用所有按鈕防止重複點擊
+            const buttons = document.querySelectorAll('#options button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            const resultTextDiv = document.getElementById('result-text');
+            
+            if (currentStage === 3) {
+                // 如果是最後一個事件(去他家)，直接進入結尾
+                triggerFinale();
+            } else {
+                // 顯示該選項的結果
+                resultTextDiv.innerText = resultText;
+                resultTextDiv.style.opacity = '1';
+
+                // 等待 2.5 秒後進入下一個事件
+                setTimeout(() => {
+                    currentStage++;
+                    renderEvent();
+                }, 2500);
+            }
+        }
+
+        function triggerFinale() {
+            const storyText = document.getElementById('story-text');
+            const optionsDiv = document.getElementById('options');
+            const resultTextDiv = document.getElementById('result-text');
+
+            optionsDiv.innerHTML = '';
+            resultTextDiv.style.opacity = '0';
+            
+            // 顯示結尾判定文字
+            storyText.innerText = "湯姆還是把你帶回他家了，但經過今天的相處，湯姆不認為你是一個合格的朋友";
+
+            // 等待玩家看完文字 (3秒)，觸發驚嚇
+            setTimeout(() => {
+                const jumpscareContainer = document.getElementById('jumpscare-container');
+                const deathScreen = document.getElementById('death-screen');
+                
+                // 顯示全屏圖片
+                jumpscareContainer.style.display = 'block';
+
+                // 1秒後隱藏圖片並顯示死亡畫面
+                setTimeout(() => {
+                    jumpscareContainer.style.display = 'none';
+                    document.getElementById('game-container').style.display = 'none';
+                    deathScreen.style.display = 'flex';
+                }, 1000);
+
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
